@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Document Similarity Checker</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+
+<div class="container">
+    <h2>Document Similarity Checker</h2>
+
+    <div class="upload-section">
+        <div class="file-box">
+            <label>📝 Handwritten Document</label>
+            <input type="file" id="doc1" accept=".pdf,.jpg,.jpeg,.png">
+        </div>
+        <div class="file-box">
+            <label>🖨️ Printed Document</label>
+            <input type="file" id="doc2" accept=".pdf,.jpg,.jpeg,.png">
+        </div>
+    </div>
+
+    <button onclick="checkSimilarity()">⚡ Compare Documents</button>
+
+    <div class="output">
+        <div class="text-areas">
+            <div class="text-area-wrapper">
+                <label>Document 1 Text</label>
+                <textarea id="text1" placeholder="Extracted text from document 1 will appear here..."></textarea>
+            </div>
+            <div class="text-area-wrapper">
+                <label>Document 2 Text</label>
+                <textarea id="text2" placeholder="Extracted text from document 2 will appear here..."></textarea>
+            </div>
+        </div>
+
+        <div class="scores-grid">
+            <div class="score-item">
+                <small>Edit Distance Score</small>
+                <span id="editScore">0.00</span>
+            </div>
+            <div class="score-item">
+                <small>TF-IDF Similarity</small>
+                <span id="tfidfScore">0.00</span>
+            </div>
+            <div class="score-item">
+                <small>Embedding Match</small>
+                <span id="embedScore">0.00</span>
+            </div>
+            <div class="score-item final-score-box">
+                <small>OVERALL SIMILARITY</small>
+                <span id="finalScore">0%</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
