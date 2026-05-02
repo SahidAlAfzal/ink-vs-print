@@ -1,10 +1,10 @@
 import os
 import torch # type: ignore
 import cv2 # type: ignore
-import numpy as np
+import numpy as np # type: ignore
 from pdf2image import convert_from_path # type: ignore
 from transformers import TrOCRProcessor, VisionEncoderDecoderModel # type: ignore
-from PIL import Image
+from PIL import Image # type: ignore
 import pytesseract # type: ignore
 
 # ==================== CONFIGURATION ====================

@@ -1,47 +1,52 @@
+from fastapi import FastAPI, UploadFile, File # type: ignore
+from fastapi.middleware.cors import CORSMiddleware # type: ignore
+import shutil
 import os
-import ocr_engine     
-import similarity_meter   
+import ocr_engine
+import similarity_meter
 
-def run_full_pipeline(handwritten_path, printed_path):
-    print("\n" + "="*50)
-    print("STARTING AI DOCUMENT PIPELINE")
-    print("="*50)
+app = FastAPI()
 
-    # 1. Wake up the OCR engines (This will load the Microsoft model into memory)
-    print("\n[SYSTEM] Loading AI Models...")
-    hand_reader = ocr_engine.HandwrittenOCR()
-    print_reader = ocr_engine.PrintedOCR()
+# This allows your HTML file to talk to your Python server safely
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], 
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-    # 2. Extract the text
-    print("\n[PHASE 1] Extracting text from Handwritten Document...")
-    text_handwritten = hand_reader.extract_text(handwritten_path)
-    
-    print("\n[PHASE 2] Extracting text from Printed Document...")
-    text_printed = print_reader.extract_text(printed_path)
+@app.post("/analyze")
+async def analyze_documents(doc1: UploadFile = File(...), doc2: UploadFile = File(...)):
+    # 1. Create a temp folder for the files
+    os.makedirs("temp", exist_ok=True)
+    hand_path = f"temp/{doc1.filename}"
+    print_path = f"temp/{doc2.filename}"
 
-    # 3. Pass the text to your Brain
-    print("\n[PHASE 3] Running Similarity Analysis...")
-    results = similarity_meter.get_all_similarity(text_handwritten, text_printed)
+    # 2. Save the uploaded files temporarily
+    with open(hand_path, "wb") as buffer:
+        shutil.copyfileobj(doc1.file, buffer)
+    with open(print_path, "wb") as buffer:
+        shutil.copyfileobj(doc2.file, buffer)
 
-    # 4. Print the final grade
-    print("\n" + "="*50)
-    print("FINAL RESULTS")
-    print("="*50)
-    print("-" * 50)
-    print(f"Edit Similarity (Typos/Structure):  {results['edit_similarity']}")
-    print(f"TF-IDF Similarity (Vocabulary):     {results['tfidf_similarity']}")
-    print(f"Embedding Similarity (Meaning):     {results['embedding_similarity']}")
-    print("-" * 50)
-    print(f"FINAL NORMALIZED SCORE (0 to 1):    {results['final_normalized_score']}")
-    print("="*50)
+    try:
+        # 3. Run the AI pipeline
+        hand_reader = ocr_engine.HandwrittenOCR()
+        print_reader = ocr_engine.PrintedOCR()
 
-if __name__ == "__main__":
-    # Point these to the files you want to test
-    # (Make sure these match your actual computer's paths)
-    test_handwritten = "input/handwritten.pdf" 
-    test_printed = "input/printed_format.pdf"
-    
-    if os.path.exists(test_handwritten) and os.path.exists(test_printed):
-        run_full_pipeline(test_handwritten, test_printed)
-    else:
-        print("Error: Could not find the test files. Please check your paths.")
+        text1 = hand_reader.extract_text(hand_path)
+        text2 = print_reader.extract_text(print_path)
+
+        results = similarity_meter.get_all_similarity(text1, text2)
+
+        # 4. Return the data to the frontend
+        return {
+            "status": "success",
+            "text1": text1,
+            "text2": text2,
+            "scores": results
+        }
+    finally:
+        # 5. Clean up the temp files so you don't need a database!
+        os.remove(hand_path)
+        os.remove(print_path)
