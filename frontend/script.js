@@ -1,23 +1,54 @@
-function checkSimilarity() {
-    // Mock OCR extraction
-    document.getElementById("text1").value = "The quick brown fox jumps over the lazy dog.";
-    document.getElementById("text2").value = "A quick brown fox jumped over a lazy dog.";
+async function checkSimilarity() {
+    console.log("1. Button clicked! Grabbing files...");
+    const doc1 = document.getElementById("doc1").files[0];
+    const doc2 = document.getElementById("doc2").files[0];
 
-    // Generating dummy similarity scores
-    let edit = (Math.random() * 0.3 + 0.6).toFixed(2); 
-    let tfidf = (Math.random() * 0.2 + 0.7).toFixed(2);
-    let embed = (Math.random() * 0.1 + 0.85).toFixed(2);
+    if (!doc1 || !doc2) {
+        alert("Please upload both documents first!");
+        return;
+    }
 
-    let finalValue = ((+edit + +tfidf + +embed) / 3);
-    let finalDisplay = (finalValue * 100).toFixed(1) + "%";
+    const btn = document.querySelector("button");
+    btn.innerText = "Analyzing... (This takes a minute)";
+    btn.disabled = true;
 
-    // Update UI with a slight delay for "processing" feel
-    setTimeout(() => {
-        document.getElementById("editScore").innerText = edit;
-        document.getElementById("tfidfScore").innerText = tfidf;
-        document.getElementById("embedScore").innerText = embed;
-        document.getElementById("finalScore").innerText = finalDisplay;
-    }, 300);
+    const formData = new FormData();
+    formData.append("doc1", doc1);
+    formData.append("doc2", doc2);
+
+    try {
+        console.log("2. Sending files to Python API...");
+        const response = await fetch("http://127.0.0.1:8000/analyze", {
+            method: "POST",
+            body: formData
+        });
+
+        console.log("3. Waiting for Python to finish...");
+        const data = await response.json();
+        console.log("4. Received data from Python:", data); 
+
+        if (data.status === "success") {
+            // Update Text Areas
+            document.getElementById("text1").value = data.text1;
+            document.getElementById("text2").value = data.text2;
+
+            // Update Math Scores
+            document.getElementById("editScore").innerText = data.scores.edit_similarity;
+            document.getElementById("tfidfScore").innerText = data.scores.tfidf_similarity;
+            document.getElementById("embedScore").innerText = data.scores.embedding_similarity;
+            
+            let finalPercent = (data.scores.final_normalized_score * 100).toFixed(1);
+            document.getElementById("finalScore").innerText = finalPercent + "%";
+            
+            console.log("5. UI Updated Successfully!");
+        }
+    } catch (error) {
+        console.error("CRITICAL ERROR:", error);
+        alert("Something went wrong! Check the console.");
+    } finally {
+        btn.innerText = "⚡ Compare Documents";
+        btn.disabled = false;
+    }
 }
 
 /* --- ENHANCED INTERACTIVE BACKGROUND SCRIPT --- */
@@ -44,7 +75,6 @@ class Particle {
     }
     
     update() {
-        // Mouse interaction
         let dx = mouse.x - this.x;
         let dy = mouse.y - this.y;
         let distance = Math.sqrt(dx * dx + dy * dy);
@@ -59,7 +89,6 @@ class Particle {
             this.x -= directionX;
             this.y -= directionY;
         } else {
-            // Return to base position
             if (this.x !== this.baseX) {
                 let dx = this.x - this.baseX;
                 this.x -= dx / 10;
@@ -70,11 +99,9 @@ class Particle {
             }
         }
 
-        // Continuous drift
         this.baseX += this.speedX;
         this.baseY += this.speedY;
 
-        // Wrap around screen
         if (this.baseX > canvas.width) this.baseX = 0;
         if (this.baseX < 0) this.baseX = canvas.width;
         if (this.baseY > canvas.height) this.baseY = 0;
@@ -119,51 +146,26 @@ function connectParticles() {
 
 function animate() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    particles.forEach(p => {
-        p.update();
-        p.draw();
-    });
-    
+    particles.forEach(p => { p.update(); p.draw(); });
     connectParticles();
     requestAnimationFrame(animate);
 }
 
-// Mouse move event
-window.addEventListener('mousemove', (e) => {
-    mouse.x = e.x;
-    mouse.y = e.y;
-});
-
-// Mouse leave event
-window.addEventListener('mouseleave', () => {
-    mouse.x = null;
-    mouse.y = null;
-});
-
-// Touch support for mobile
+window.addEventListener('mousemove', (e) => { mouse.x = e.x; mouse.y = e.y; });
+window.addEventListener('mouseleave', () => { mouse.x = null; mouse.y = null; });
 window.addEventListener('touchmove', (e) => {
     e.preventDefault();
     mouse.x = e.touches[0].clientX;
     mouse.y = e.touches[0].clientY;
 }, { passive: false });
+window.addEventListener('touchend', () => { mouse.x = null; mouse.y = null; });
 
-window.addEventListener('touchend', () => {
-    mouse.x = null;
-    mouse.y = null;
-});
-
-// Resize handler
 let resizeTimeout;
 window.addEventListener('resize', () => {
     clearTimeout(resizeTimeout);
-    resizeTimeout = setTimeout(() => {
-        initCanvas();
-        createParticles();
-    }, 100);
+    resizeTimeout = setTimeout(() => { initCanvas(); createParticles(); }, 100);
 });
 
-// Initialize
 initCanvas();
 createParticles();
 animate();
