@@ -31,7 +31,7 @@ def get_tfidf_similarity(text1:str ,text2:str) -> float:
     vectorizer = TfidfVectorizer()
     try:
         tfidf_matrix = vectorizer.fit_transform([text1,text2])   # sparse matrix, direct cosine calc wont work
-        cos = cosine_similarity(tfidf_matrix[0:1],tfidf_matrix[1:2]) # expects input vector in 2D
+        cos = cosine_similarity(tfidf_matrix[0:1],tfidf_matrix[1:2]) # type: ignore # expects input vector in 2D
         # print(cos)
         return float(cos[0][0])
     
@@ -66,7 +66,7 @@ def get_all_similarity(raw_text1:str, raw_text2:str):
     tfidf_score = get_tfidf_similarity(text1, text2)
     embedding_score = get_embedding_similarity(text1, text2)
     
-    final_score = (edit_score + tfidf_score + embedding_score) / 3
+    final_score = (edit_score + 2 * tfidf_score + 2 * embedding_score) / 5
     
     
     return {

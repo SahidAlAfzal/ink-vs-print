@@ -4,8 +4,9 @@ import shutil
 import os
 import ocr_engine
 import similarity_meter
+import string_cleaning
 
-app = FastAPI()
+app = FastAPI(title="Handwriting vs Printed Text Similarity API")
 
 # This allows your HTML file to talk to your Python server safely
 app.add_middleware(
@@ -36,7 +37,10 @@ async def analyze_documents(doc1: UploadFile = File(...), doc2: UploadFile = Fil
 
         text1 = hand_reader.extract_text(hand_path)
         text2 = print_reader.extract_text(print_path)
-
+        
+        text1 = string_cleaning.normalize_text(text1)
+        text2 = string_cleaning.normalize_text(text2)
+        
         results = similarity_meter.get_all_similarity(text1, text2)
 
         # 4. Return the data to the frontend
@@ -49,4 +53,5 @@ async def analyze_documents(doc1: UploadFile = File(...), doc2: UploadFile = Fil
     finally:
         # 5. Clean up the temp files so you don't need a database!
         os.remove(hand_path)
-        os.remove(print_path)
+        if os.path.exists(print_path):
+            os.remove(print_path)
