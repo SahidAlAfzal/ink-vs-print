@@ -17,6 +17,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/")
+def root():
+    return {"message": "Welcome to ink vs print."}
+
 @app.post("/analyze")
 async def analyze_documents(doc1: UploadFile = File(...), doc2: UploadFile = File(...)):
     # 1. Create a temp folder for the files
